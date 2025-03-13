@@ -35,6 +35,8 @@ class _MyHomePageState extends State<MyHomePage> {
   final TextEditingController _controller = TextEditingController();
   final TextEditingController _controller_2 = TextEditingController();
 
+  Set<int> selectedTaskIds = {};
+
   //helper is the instance of the SqfliteHelper class.
   SqfliteHelper helper = SqfliteHelper();
 
@@ -52,6 +54,10 @@ class _MyHomePageState extends State<MyHomePage> {
               padding: const EdgeInsets.all(8),
               itemCount: snapshot.data?.length ?? 0,
               itemBuilder: (context, index) {
+                final isSelected = selectedTaskIds.contains(
+                  snapshot.data?[index]['id'],
+                );
+
                 print("snapshot.data");
                 print(snapshot.data);
                 print(snapshot.data?.length);
@@ -60,8 +66,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     contentPadding: const EdgeInsets.all(0),
                     leading: Checkbox(
                       //We use 1 for true and 0 for false.
-                      value:
-                          snapshot.data?[index]['status'] == 1 ? true : false,
+                      value: isSelected,
                       onChanged: (value) async {
                         //updateTask method takes the id of the task and the status to be updated.
                         await helper.updateTask(
@@ -69,7 +74,13 @@ class _MyHomePageState extends State<MyHomePage> {
                           value!,
                         );
                         //setState is used to update the UI.
-                        setState(() {});
+                        setState(() {
+                          if (value == true) {
+                            selectedTaskIds.add(snapshot.data?[index]['id']);
+                          } else {
+                            selectedTaskIds.remove(snapshot.data?[index]['id']);
+                          }
+                        });
                       },
                     ),
                     title: Column(
@@ -177,10 +188,15 @@ class _MyHomePageState extends State<MyHomePage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           SizedBox(width: 35),
-          FloatingActionButton(
-            onPressed: () async {},
-            child: const Icon(Icons.delete),
-          ),
+          if (selectedTaskIds.isNotEmpty)
+            FloatingActionButton(
+              onPressed: () async {
+                print(selectedTaskIds);
+                await helper.deleteAllSelectedTasks(selectedTaskIds.toList());
+                setState(() {});
+              },
+              child: const Icon(Icons.delete),
+            ),
           SizedBox(width: 200),
           FloatingActionButton(
             onPressed: () {
@@ -235,6 +251,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           );
                           //clear is used to clear the text field.
                           _controller.clear();
+                          _controller_2.clear();
                           //here we are checking if the widget is mounted before popping the dialog box.
                           //because we are using context in async functions.
                           if (context.mounted) {
